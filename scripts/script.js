@@ -180,7 +180,6 @@ $(document).ready(function() {
     });
 
     $(window).on('scroll', function() {
-        console.log('scroll:'+ $(window).scrollTop());
         if ($(window).scrollTop() > 0) {
             $("#topBar").addClass("contador-fijo");
         } else {
@@ -365,6 +364,9 @@ $(document).ready(function() {
                 html: `<br>${nombres.join('<br>')}`,
             });
         }
+
+        sincronizarPersonasConActo(nombres, colNombre);
+        moverSeleccionadosAlFinal(colNombre);
     }
 
     // Comprobar género mayoritario
@@ -426,6 +428,7 @@ $(document).ready(function() {
         });
     }
 
+    // Pinta cada año con un color
     function actualizarColores() {
         $('#tablaDatos tbody td:not(:first-child):not(:nth-child(2)):not(:nth-child(3))').each(function() {
             const valor = parseInt($(this).text(), 10); // Convertir a número
@@ -439,12 +442,14 @@ $(document).ready(function() {
         });
     }
 
+    // Reasignar los nº de rueda
     function reasignarNumerosRueda() {
         listaPersonas.forEach((item, index) => {
             item.num_rueda = index + 1; 
         });
     }
     
+    // Actualizar contadores de carné de avantcara
     function actualizarResumenAvantcarga(avantcarga, operacion) {       
         if (avantcarga === "Sí") {
             operacion === "suma" ? totalSi++ : totalSi--;
@@ -458,5 +463,53 @@ $(document).ready(function() {
         $("#totalSi").text(totalSi);
         $("#totalCaducado").text(totalCaducado);
         $("#totalNo").text(totalNo);
+    }
+
+    // Mover al final de la rueda aquellos festeros que realizan acto
+    function moverSeleccionadosAlFinal(colNombre) {
+        console.log('mover');
+        // 1. Separa personas: las que tienen la columna actual = añoActual vs las demás
+        const personasAMover = [];
+        const personasQueQuedan = [];
+        
+        listaPersonas.forEach((persona) => {
+            if (persona[colNombre] == añoActual) {
+                personasAMover.push(persona); // Mantienen su orden original
+            } else {
+                personasQueQuedan.push(persona);
+            }
+        });
+        console.log('a mover', personasAMover);
+        console.log('se quedan', personasQueQuedan)
+        
+        // 2. Reorganiza: primero las que quedan, luego las que se mueven
+        listaPersonas = [...personasQueQuedan, ...personasAMover];
+        
+        // 3. Re-renderiza la tabla
+        reasignarNumerosRueda();
+        renderizarTabla(listaPersonas);
+    }
+
+    // Sincronizar las personas que hacen los actos
+    function sincronizarPersonasConActo(nombresSeleccionados, colNombre) {
+        $('#tablaDatos tbody tr').each(function() {
+            const nombrePersona = fila.find('td:eq(1)').text().trim();
+            
+            // Solo sincronizar si esta persona está seleccionada
+            if (nombresSeleccionados.includes(nombrePersona) && listaPersonas[index]) {
+                // Sincronizar todas las columnas de actos para esta persona
+                const columnasActos = ['escuadra1', 'diana1', 'escuadra2', 'diana3', 'diana2'];
+                
+                columnasActos.forEach((columna, colIndex) => {
+                    const celdaIndex = colIndex + 4; // Las columnas empiezan en la posición 4
+                    const valorCelda = fila.find(`td:eq(${celdaIndex})`).text().trim();
+                    
+                    // Actualizar el valor en listaPersonas
+                    listaPersonas[index][columna] = valorCelda ? parseInt(valorCelda) || valorCelda : null;
+                });
+                
+                console.log(`Sincronizada persona: ${nombrePersona}`);
+            }
+        });
     }
 });
