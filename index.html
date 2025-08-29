@@ -12,8 +12,9 @@
         <div class="container-fluid d-flex justify-content-between align-items-center">
             <h1 class="h4">Filà Ligeros - Rueda de actos</h1>
             <div>
-                <button id="exportCSV" class="btn btn-secondary btn-sm">Exportar CSV</button>
-                <button id="save" class="btn btn-success btn-sm">Guardar</button>
+                <button id="exportCSV" type="button" class="btn btn-secondary">Exportar CSV</button>
+                <button id="btnNuevoFestero" type="button" class="btn btn-primary">Añadir festero</button>
+                <button id="btnGuardar" type="button" class="btn btn-success">Guardar</button>
             </div>
         </div>
     </header>
@@ -56,9 +57,9 @@
             <div class="row mt-2">
                 <div class="col-xs-12 col-sm-6">
                     <div id="resumenCarnet" class="mt-1">
-                        <strong>Carné Avantcarga:</strong> <span id="totalSi">0</span> | 
-                        <strong>Caducado:</strong> <span id="totalCaducado">0</span> | 
-                        <strong>No tiene:</strong> <span id="totalNo">0</span>
+                        <strong>Carné Avantcarga:</strong> <span id="avantcargaSi">0</span> | 
+                        <strong>Caducado:</strong> <span id="avantcargaCaducado">0</span> | 
+                        <strong>No tiene:</strong> <span id="avantcargaNo">0</span>
                     </div>
                 </div>
                 <div class="col-xs-12 col-sm-6">
@@ -70,6 +71,15 @@
                         </label>
                     </div>
                 </div>
+                <!-- <div class="col-xs-12 col-sm-6">
+                    <div class="form-group">
+                        <label>Permitir escuadras mixtas</label>
+                        <label class="switch">
+                            <input type="checkbox" id="mixta">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div> -->
             </div>
         </div>
 
@@ -96,6 +106,7 @@
         </div>
     </main>
 
+    <!-- Editar información de un festero -->
     <div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -105,13 +116,12 @@
                 </div>
                 <div class="modal-body">
                     <form id="formEditar">
-                        <div class="mb-3">
-                            <label class="form-label">Nombre</label>
-                            <input type="text" class="form-control" id="editarNombre">
-                        </div>
-
                         <div class="row mb-3">
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 mb-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="editarNombre">
+                            </div>
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label" for="editarCategoria">Categoría</label>
                                 <select class="form-control" id="editarCategoria">
                                     <option value="Supernumerario">Supernumerario</option>
@@ -119,17 +129,14 @@
                                     <option value="Fester">Fester</option>
                                 </select>
                             </div>
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label" for="editarGenero">Género</label>
                                 <select class="form-control" id="editarGenero">
                                     <option value="Hombre">Hombre</option>
                                     <option value="Mujer">Mujer</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label" for="editarAvantcarga">Carné Avantcarga</label>
                                 <select class="form-control" id="editarAvantcarga">
                                     <option value="Sí">Sí</option>
@@ -137,22 +144,47 @@
                                     <option value="Caducado">Caducado</option>
                                 </select>
                             </div>
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label" for="editarNumRueda">Nº rueda</label>
                                 <input type="number" class="form-control" id="editarNumRueda" disabled>
                             </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label" for="editarInclusionRueda">Año inclusión rueda</label>
                                 <input type="number" class="form-control" id="editarInclusionRueda" min="2000">
                             </div>
-                            <div class="col-xs-12 col-sm-6">
+                            <div class="col-xs-12 col-sm-6 mb-3">
                                 <label class="form-label d-block">Mayor de 50 años</label>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="editarMayor50">
                                 </div>
+                            </div>
+                        </div>
+
+                        <h4>Actos</h4>
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-6 mb-3">
+                                <label for="editarEscuadra1" class="form-label">Escuadra 1</label>
+                                <input type="number" class="form-control" id="editarEscuadra1" min="2000">
+                            </div>
+                            
+                            <div class="col-xs-12 col-sm-6 mb-3">
+                                <label for="editarEscuadra2" class="form-label">Escuadra 2</label>
+                                <input type="number" class="form-control" id="editarEscuadra2" min="2000">
+                            </div>
+
+                            <div class="col-xs-12 col-sm-6 mb-3">
+                                <label for="editarDiana1" class="form-label">Diana 1</label>
+                                <input type="number" class="form-control" id="editarDiana1" min="2000">
+                            </div>
+                                                        
+                            <div class="col-xs-12 col-sm-6 mb-3">
+                                <label for="editarDiana2" class="form-label">Diana 2</label>
+                                <input type="number" class="form-control" id="editarDiana2" min="2000">
+                            </div>
+
+                            <div class="col-xs-12 col-sm-6 mb-3">
+                                <label for="editarDiana3" class="form-label">Diana 3</label>
+                                <input type="number" class="form-control" id="editarDiana3" min="2000">
                             </div>
                         </div>
                     </form>
@@ -170,6 +202,60 @@
         </div>
     </div>
 
+    <!-- Añadir un nuevo festero a la rueda -->
+    <div class="modal fade" id="modalNuevoFestero" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Festero a la rueda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoFestero">
+                    <div class="row mb-3">
+                        <div class="col-xs-12 mb-3">
+                            <label for="nuevoNombre">Nombre</label>
+                            <input type="text" id="nuevoNombre" class="form-control" required>
+                        </div>
+                        <div class="col-xs-12 col-sm-6 mb-3">
+                            <label class="form-label" for="nuevoCategoria">Categoría</label>
+                            <select class="form-control" id="nuevoCategoria" required>
+                                <option value="Supernumerario">Supernumerario</option>
+                                <option value="Veterano">Veterano</option>
+                                <option value="Fester" selected>Fester</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-12 col-sm-6 mb-3">
+                            <label class="form-label" for="nuevoGenero">Género</label>
+                            <select class="form-control" id="nuevoGenero" required>
+                                <option value="Hombre">Hombre</option>
+                                <option value="Mujer">Mujer</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-12 col-sm-6 mb-3">
+                            <label class="form-label" for="nuevoAvantcarga">Carné Avantcarga</label>
+                            <select class="form-control" id="nuevoAvantcarga" required>
+                                <option value="Sí">Sí</option>
+                                <option value="No" selected>No</option>
+                                <option value="Caducado">Caducado</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-12 col-sm-6 mb-3">
+                            <label class="form-label d-block">Mayor de 50 años</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="nuevoMayor50">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarNuevoFestero">Guardar</button>
+            </div>
+            </div>
+        </div>
+    </div>
 
     <script src="libs/bootstrap.bundle.min.js"></script>
     <script src="libs/jquery-3.7.1.min.js"></script>

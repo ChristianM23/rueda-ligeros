@@ -1,22 +1,26 @@
 
 $(document).ready(function() {
     let listaPersonas = [];
-    const añoActual = new Date().getFullYear() +1;
+    let generoEscuadra = "";
+    const añoFestero = new Date().getFullYear() +1;
+
+    // Múltiples actos por persona en un mismo año
+    let multiActo = false; // por defecto no se permiten múltiples actos
+
+    // Totales Avantcarga
+    let avantcargaSi = 0;
+    let avantcargaNo = 0;
+    let avantcargaCaducado = 0;
+
     // Límite escuadreros/dianeros
     const limitePorColumna = {
-        escuadra1: 11,
+        escuadra1: 5,
         escuadra2: 11,
         diana1: 11,
         diana2: 11,
         diana3: 11
     }; 
-    const contadores = {
-        escuadra1: 0,
-        escuadra2: 0,
-        diana1: 0,
-        diana2: 0,
-        diana3: 0
-    };
+
     // Mapear índice de columna a nombre de columna
     const columnas = {
         4: 'escuadra1',
@@ -25,7 +29,16 @@ $(document).ready(function() {
         7: 'diana3',
         8: 'diana2'
     };
-    let generoEscuadra = "";
+
+    // Contadores
+    const contadores = {
+        escuadra1: 0,
+        escuadra2: 0,
+        diana1: 0,
+        diana2: 0,
+        diana3: 0
+    };
+    
     const contadorGenero = {
         hombres: 0,
         mujeres: 0
@@ -47,26 +60,23 @@ $(document).ready(function() {
         diana3: 0
     };
 
-    // Múltiples actos por persona en un mismo año
-    let multiActo = false; // por defecto no se permiten múltiples actos
-
-    // Totales Avantcarga
-    let totalSi = 0;
-    let totalNo = 0;
-    let totalCaducado = 0;
+    /**
+     ***************
+     *   EVENTOS   *
+     ***************
+     */
 
     $('#multiActo').on('change', function() {
         multiActo = $(this).is(':checked');
         actualizarEstadoCeldas();
     });
 
-    // Rellenar tabla con los datos del JSON
+    // Inicializar tabla con los datos del JSON
     $.getJSON('data/data.json', function(data) {
         listaPersonas = data;
         renderizarTabla(listaPersonas);
 
         actualizarEstadoCeldas();
-        actualizarColores();
         actualizarTotales();
     }).fail(function() {
         console.error("No se pudo cargar el JSON");
@@ -89,7 +99,7 @@ $(document).ready(function() {
 
         // Alternar valor
         if (celdaCorrecta.text() === '' && contadores[colActual] < limitePorColumna[colActual]) {
-            celdaCorrecta.text(añoActual);
+            celdaCorrecta.text(añoFestero);
             contadores[colActual]++;
             operacion = "suma";
             if (genero === 'Hombre') {
@@ -100,7 +110,7 @@ $(document).ready(function() {
                 contadorGenero.mujeres++;
                 contadorGeneroMujeres[colActual]++;
             }
-        } else if (celdaCorrecta.text() == añoActual) {
+        } else if (celdaCorrecta.text() == añoFestero) {
             celdaCorrecta.text('');
             contadores[colActual]--;
             operacion = "resta";
@@ -113,7 +123,6 @@ $(document).ready(function() {
                 contadorGeneroMujeres[colActual]--;
             }
         }
-
 
         if (colActual === 'escuadra1' || colActual === 'escuadra2') {
             const avantcarga = fila.data('avantcarga');
@@ -136,9 +145,6 @@ $(document).ready(function() {
         }
     });
 
-    // Editar datos de una persona
-    let personaSeleccionada = null;
-
     // Abrir modal con datos
     $(document).on('click', '.editarBtn', function() {
         const index = $(this).closest('tr').data('index');
@@ -158,7 +164,9 @@ $(document).ready(function() {
 
     // Borrar una persona
     $('#borrarPersona').on('click', function() {
-        if (selectedIndex === null) return;
+        let index = $("#formEditar").data("index");
+
+        if (index === null) return;
 
         Swal.fire({
             title: '¿Estás seguro?',
@@ -169,16 +177,54 @@ $(document).ready(function() {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                listaPersonas.splice(selectedIndex, 1);      // Borrar persona
-                reasignarNumerosRueda();            // Reasignar números de rueda
-                renderizarTabla(listaPersonas);              // Volver a dibujar tabla
-                selectedIndex = null;               // Limpiar selección
-                $('#modalEditar').modal('hide');    // Cerrar modal
+                listaPersonas.splice(index, 1);             // Borrar persona
+                reasignarNumerosRueda();                    // Reasignar números de rueda
+                renderizarTabla(listaPersonas);             // Volver a dibujar tabla
+                index = null;                               // Limpiar selección
+                $('#modalEditar').modal('hide');            // Cerrar modal
                 Swal.fire('Borrado!', 'La persona ha sido eliminada.', 'success');
             }
         });
     });
 
+    // Añadir festero a la rueda
+    $("#btnNuevoFestero").on("click", function () {
+        $("#formNuevoFestero")[0].reset();
+        $("#modalNuevoFestero").modal("show");
+    });
+
+    $("#guardarNuevoFestero").on("click", function () {
+        // Obtener el último número de rueda y sumar 1
+        const ultimoNumRueda = listaPersonas.length > 0 
+            ? Math.max(...listaPersonas.map(p => p.num_rueda)) 
+            : 0;
+
+        const nuevoFestero = {
+            num_rueda: ultimoNumRueda + 1,
+            nombre: $("#nuevoNombre").val().trim().toUpperCase(),
+            genero: $("#nuevoGenero").val(),
+            categoria: $("#nuevoCategoria").val(),
+            mayor_50: $("#nuevoMayor50").is(":checked"),
+            avantcarga: $("#nuevoAvantcarga").val(),
+            inclusion_rueda: añoFestero,
+            escuadra1: null,
+            diana1: null,
+            escuadra2: null,
+            diana3: null,
+            diana2: null
+        };
+
+        listaPersonas.push(nuevoFestero);
+        renderizarTabla(listaPersonas);
+        $("#modalNuevoFestero").modal("hide");
+    });
+
+    // Guardar datos
+    $("#btnGuardar").on("click", function () {
+        guardarRuedaFesteros();
+    });
+
+    // Fijar contadores
     $(window).on('scroll', function() {
         if ($(window).scrollTop() > 0) {
             $("#topBar").addClass("contador-fijo");
@@ -190,8 +236,11 @@ $(document).ready(function() {
     });
 
     /**
-     * FUNCIONES
+     *****************
+     *   FUNCIONES   *
+     *****************
      */
+
     function renderizarTabla(listaPersonas = []) {
         // Limpiar el tbody por si hubiera algo
         $('#tablaDatos tbody').empty();
@@ -230,6 +279,8 @@ $(document).ready(function() {
             `;
             $('#tablaDatos tbody').append(fila);
         });
+
+        actualizarColores();
     }
 
     function editarPersona(persona, index) {
@@ -240,6 +291,12 @@ $(document).ready(function() {
         $("#editarInclusionRueda").val(persona.inclusion_rueda);
         $("#editarMayor50").prop("checked", persona.mayor_50 === "Sí");
         $("#editarAvantcarga").val(persona.avantcarga);
+
+        $("#editarEscuadra1").val(persona.escuadra1);
+        $("#editarEscuadra2").val(persona.escuadra2);
+        $("#editarDiana1").val(persona.diana1);
+        $("#editarDiana2").val(persona.diana2);
+        $("#editarDiana3").val(persona.diana3);
 
         $("#formEditar").data("index", index);
         $("#modalEditar").modal("show");
@@ -260,6 +317,12 @@ $(document).ready(function() {
         listaPersonas[index].inclusion_rueda = $('#editarInclusionRueda').val();
         listaPersonas[index].mayor_50 = $('#editarMayor50').val();
         listaPersonas[index].avantcarga = $('#editarAvantcarga').val();
+
+        listaPersonas[index].escuadra1 = $('#editarEscuadra1').val();
+        listaPersonas[index].escuadra2 = $('#editarEscuadra2').val();
+        listaPersonas[index].diana1 = $('#editarDiana1').val();
+        listaPersonas[index].diana2 = $('#editarDiana2').val();
+        listaPersonas[index].diana3 = $('#editarDiana3').val();
     }
 
     function actualizarEstadoCeldas() {
@@ -269,7 +332,7 @@ $(document).ready(function() {
 
             // Comprobar si ya tiene año en alguna columna
             fila.find('td:not(:first-child):not(:nth-child(2)):not(:nth-child(3))').each(function() {
-                if ($(this).text() == añoActual) {
+                if ($(this).text() == añoFestero) {
                     tieneAño = true;
                 }
             });
@@ -330,9 +393,10 @@ $(document).ready(function() {
     function mostrarSeleccionados(colNombre) {
         const indexCorrecto = Object.keys(columnas).find(key => columnas[key] === colNombre);
         let nombres = [];
+
         $('#tablaDatos tbody tr').each(function() {
             const celda = $(this).find(`td:eq(${indexCorrecto})`);
-            if (celda.text() == añoActual) {
+            if (celda.text() == añoFestero) {
                 const nombre = $(this).find('td:eq(1)').text(); // columna del nombre
                 nombres.push(nombre);
             }
@@ -396,22 +460,43 @@ $(document).ready(function() {
     function bloquearGeneroContrario(colNombre, generoPermitido) {
         const indexCorrecto = Object.keys(columnas).find(key => columnas[key] === colNombre);
 
-        $('#tablaDatos tbody tr').each(function() {
+        $('#tablaDatos tbody tr').each(function () {
             const fila = $(this);
             const genero = fila.data('genero');
             const celda = fila.find(`td:eq(${indexCorrecto})`);
 
-            // Si no coincide con el permitido y está marcada, quitarla
-            if (genero !== generoPermitido && celda.text() == añoActual) {
+            // Verificar si hay marca activa (añoFestero) y el género NO coincide
+            if (genero !== generoPermitido && celda.text() == añoFestero) {
                 celda.text('');
+
                 contadores[colNombre]--;
+
+                // Buscar persona en listaPersonas para actualizar su estado
+                const nombrePersona = fila.find('td:eq(1)').text().trim();
+                const personaIndex = listaPersonas.findIndex(p => p.nombre === nombrePersona);
+                if (personaIndex !== -1) {
+                    listaPersonas[personaIndex][colNombre] = null;
+
+                    // Descontar de contadores de avantcarga según su estado
+                    actualizarResumenAvantcarga(listaPersonas[personaIndex].avantcarga, "resta");
+                }
             }
 
-            // Deshabilitar la celda (visualmente y funcionalmente)
+            // Deshabilitar celda para género contrario
             if (genero !== generoPermitido) {
                 celda.addClass('disabled');
             }
         });
+
+        // Descontar del contador del acto
+        if (generoPermitido === 'Hombre') {
+            contadorGenero.mujeres = 0;
+            contadorGeneroMujeres[colNombre] = 0;
+        }
+        if (generoPermitido === 'Mujer') {
+            contadorGenero.hombres = 0;
+            contadorGeneroHombres[colNombre] = 0;
+        }
     }
 
     // Desbloquear las celdas que habían sido bloqueadas
@@ -452,28 +537,52 @@ $(document).ready(function() {
     // Actualizar contadores de carné de avantcara
     function actualizarResumenAvantcarga(avantcarga, operacion) {       
         if (avantcarga === "Sí") {
-            operacion === "suma" ? totalSi++ : totalSi--;
+            operacion === "suma" ? avantcargaSi++ : avantcargaSi--;
         } else if (avantcarga === "Caducado" || avantcarga === "Cad.") {
-            operacion === "suma" ? totalCaducado++ : totalCaducado--;
+            operacion === "suma" ? avantcargaCaducado++ : avantcargaCaducado--;
         } else {
-            operacion === "suma" ? totalNo++ : totalNo--;
+            operacion === "suma" ? avantcargaNo++ : avantcargaNo--;
         }
 
         // Mostrar en HTML
-        $("#totalSi").text(totalSi);
-        $("#totalCaducado").text(totalCaducado);
-        $("#totalNo").text(totalNo);
+        $("#avantcargaSi").text(avantcargaSi);
+        $("#avantcargaCaducado").text(avantcargaCaducado);
+        $("#avantcargaNo").text(avantcargaNo);
     }
+
+    // Sincronizar las personas que hacen los actos
+    function sincronizarPersonasConActo(nombresSeleccionados, colNombre) {
+        nombresSeleccionados.forEach(nombrePersona => {
+            const nombre = nombrePersona.trim();
+
+            // Buscar fila correspondiente
+            const fila = $(`#tablaDatos tbody tr`).filter(function () {
+                return $(this).find('td:eq(1)').text().trim() === nombre;
+            });
+
+            if (fila.length === 0) return; // Si no se encuentra, saltar
+
+            // Buscar índice correcto en listaPersonas
+            const personaIndex = listaPersonas.findIndex(persona => persona.nombre === nombre);
+            if (personaIndex !== -1) {
+                // Sincronizar columnas de actos
+                const celdaIndex = Object.keys(columnas).find(key => columnas[key] === colNombre);
+                const valorCelda = fila.find(`td:eq(${celdaIndex})`).text().trim();
+                listaPersonas[personaIndex][colNombre] = valorCelda === '' ? null : añoFestero;
+            }
+        });
+    }
+
 
     // Mover al final de la rueda aquellos festeros que realizan acto
     function moverSeleccionadosAlFinal(colNombre) {
         console.log('mover');
-        // 1. Separa personas: las que tienen la columna actual = añoActual vs las demás
+        // 1. Separa personas: las que tienen la columna actual = añoFestero vs las demás
         const personasAMover = [];
         const personasQueQuedan = [];
         
         listaPersonas.forEach((persona) => {
-            if (persona[colNombre] == añoActual) {
+            if (persona[colNombre] == añoFestero) {
                 personasAMover.push(persona); // Mantienen su orden original
             } else {
                 personasQueQuedan.push(persona);
@@ -490,26 +599,20 @@ $(document).ready(function() {
         renderizarTabla(listaPersonas);
     }
 
-    // Sincronizar las personas que hacen los actos
-    function sincronizarPersonasConActo(nombresSeleccionados, colNombre) {
-        $('#tablaDatos tbody tr').each(function() {
-            const nombrePersona = fila.find('td:eq(1)').text().trim();
-            
-            // Solo sincronizar si esta persona está seleccionada
-            if (nombresSeleccionados.includes(nombrePersona) && listaPersonas[index]) {
-                // Sincronizar todas las columnas de actos para esta persona
-                const columnasActos = ['escuadra1', 'diana1', 'escuadra2', 'diana3', 'diana2'];
-                
-                columnasActos.forEach((columna, colIndex) => {
-                    const celdaIndex = colIndex + 4; // Las columnas empiezan en la posición 4
-                    const valorCelda = fila.find(`td:eq(${celdaIndex})`).text().trim();
-                    
-                    // Actualizar el valor en listaPersonas
-                    listaPersonas[index][columna] = valorCelda ? parseInt(valorCelda) || valorCelda : null;
-                });
-                
-                console.log(`Sincronizada persona: ${nombrePersona}`);
-            }
-        });
+    function guardarRuedaFesteros() {
+        const jsonStr = JSON.stringify(listaPersonas, null, 2); // formato bonito con indentación
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "data.json"; // nombre del archivo
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        console.log("Lista de personas guardada en data.json");
     }
+    
 });
