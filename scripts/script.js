@@ -50,6 +50,11 @@ $(document).ready(function() {
     // Múltiples actos por persona en un mismo año
     let multiActo = false; // por defecto no se permiten múltiples actos
 
+    // Totales Avantcarga
+    let totalSi = 0;
+    let totalNo = 0;
+    let totalCaducado = 0;
+
     $('#multiActo').on('change', function() {
         multiActo = $(this).is(':checked');
         actualizarEstadoCeldas();
@@ -80,10 +85,13 @@ $(document).ready(function() {
         // Saber el género de la persona
         const genero = fila.data('genero');
 
+        let operacion = "";
+
         // Alternar valor
         if (celdaCorrecta.text() === '' && contadores[colActual] < limitePorColumna[colActual]) {
             celdaCorrecta.text(añoActual);
             contadores[colActual]++;
+            operacion = "suma";
             if (genero === 'Hombre') {
                 contadorGenero.hombres++;
                 contadorGeneroHombres[colActual]++;
@@ -95,6 +103,7 @@ $(document).ready(function() {
         } else if (celdaCorrecta.text() == añoActual) {
             celdaCorrecta.text('');
             contadores[colActual]--;
+            operacion = "resta";
             if (genero === 'Hombre') {
                 contadorGenero.hombres--;
                 contadorGeneroHombres[colActual]--;
@@ -103,6 +112,13 @@ $(document).ready(function() {
                 contadorGenero.mujeres--;
                 contadorGeneroMujeres[colActual]--;
             }
+        }
+
+
+        if (colActual === 'escuadra1' || colActual === 'escuadra2') {
+            const avantcarga = fila.data('avantcarga');
+
+            actualizarResumenAvantcarga(avantcarga, operacion);
         }
 
         validarGenero(colActual);
@@ -163,6 +179,17 @@ $(document).ready(function() {
         });
     });
 
+    $(window).on('scroll', function() {
+        console.log('scroll:'+ $(window).scrollTop());
+        if ($(window).scrollTop() > 0) {
+            $("#topBar").addClass("contador-fijo");
+        } else {
+            if ($("#topBar").hasClass("contador-fijo")) {
+                $("#topBar").removeClass("contador-fijo");
+            }
+        }
+    });
+
     /**
      * FUNCIONES
      */
@@ -185,7 +212,7 @@ $(document).ready(function() {
             if (item.mayor_50 === "Sí") personIcon = '<img src="./img/mayor-50.png" height="15px">';
 
             const fila = `
-                <tr data-nombre='${item.nombre}' data-genero='${item.genero}' data-index='${index}'>
+                <tr data-nombre='${item.nombre}' data-genero='${item.genero}' data-avantcarga='${item.avantcarga}' data-index='${index}'>
                     <td>${item.num_rueda}</td>
                     <td>
                         ${item.nombre} 
@@ -418,32 +445,18 @@ $(document).ready(function() {
         });
     }
     
-    function actualizarResumenAvantcarga() {
-        let totalSi = 0;
-        let totalCaducado = 0;
-        let totalNo = 0;
-
-        listaPersonas.forEach(persona => {
-            // Solo contar si tiene escuadra1 o escuadra2 asignado
-            if (persona.escuadra1 || persona.escuadra2) {
-                switch(persona.carnet_avantcarga) {
-                    case "si":
-                        totalSi++;
-                        break;
-                    case "caducado":
-                        totalCaducado++;
-                        break;
-                    case "no":
-                    default:
-                        totalNo++;
-                        break;
-                }
-            }
-        });
+    function actualizarResumenAvantcarga(avantcarga, operacion) {       
+        if (avantcarga === "Sí") {
+            operacion === "suma" ? totalSi++ : totalSi--;
+        } else if (avantcarga === "Caducado" || avantcarga === "Cad.") {
+            operacion === "suma" ? totalCaducado++ : totalCaducado--;
+        } else {
+            operacion === "suma" ? totalNo++ : totalNo--;
+        }
 
         // Mostrar en HTML
-        $("#totalSi").text() = totalSi;
-        $("#totalCaducado").text() = totalCaducado;
-        $("#totalNo").text() = totalNo;
+        $("#totalSi").text(totalSi);
+        $("#totalCaducado").text(totalCaducado);
+        $("#totalNo").text(totalNo);
     }
 });

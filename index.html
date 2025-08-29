@@ -12,13 +12,14 @@
         <div class="container-fluid d-flex justify-content-between align-items-center">
             <h1 class="h4">Filà Ligeros - Rueda de actos</h1>
             <div>
-                <button id="exportCSV" class="btn btn-success btn-sm">Exportar CSV</button>
+                <button id="exportCSV" class="btn btn-secondary btn-sm">Exportar CSV</button>
+                <button id="save" class="btn btn-success btn-sm">Guardar</button>
             </div>
         </div>
     </header>
 
-    <main class="container-fluid">
-        <div id="topBar">
+    <main class="container-fluid mt-2">
+        <div id="topBar" class="p-1">
             <div class="contador">
                 <table>
                     <thead>
@@ -52,18 +53,23 @@
                 </table>
             </div>
 
-            <div id="resumenCarnet">
-                <p><strong>Carne Avantcarga:</strong> <span id="totalSi">0</span></p>
-                <p><strong>Caducado:</strong> <span id="totalCaducado">0</span></p>
-                <p><strong>No tiene:</strong> <span id="totalNo">0</span></p>
-            </div>
-
-            <div class="form-group mt-2">
-                <label for="multiActo">Permitir múltiples actos por persona</label>
-                <label class="switch">
-                    <input type="checkbox" id="multiActo">
-                    <span class="slider round"></span>
-                </label>
+            <div class="row mt-2">
+                <div class="col-xs-12 col-sm-6">
+                    <div id="resumenCarnet" class="mt-1">
+                        <strong>Carné Avantcarga:</strong> <span id="totalSi">0</span> | 
+                        <strong>Caducado:</strong> <span id="totalCaducado">0</span> | 
+                        <strong>No tiene:</strong> <span id="totalNo">0</span>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-6">
+                    <div class="form-group">
+                        <label>Permitir múltiples actos por persona</label>
+                        <label class="switch">
+                            <input type="checkbox" id="multiActo">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 

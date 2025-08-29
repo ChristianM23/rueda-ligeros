@@ -30,17 +30,22 @@ tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
+.contador-fijo {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .contador {
     background: #f8f9fa;
     border: 1px solid #007bff;
     padding: 8px 16px;
     border-radius: 8px;
     font-weight: bold;
-    position: sticky;
     top: 70px; /* altura del header sticky */
-    z-index: 999;
 }
-
 
 .resaltar {
     background-color: #ffeb3b; /* amarillo */
