@@ -7,6 +7,9 @@ $(document).ready(function() {
     // Múltiples actos por persona en un mismo año
     let multiActo = false; // por defecto no se permiten múltiples actos
 
+    // Escuadras mixtas
+    let permitirMixta  = false;
+
     // Totales Avantcarga
     let avantcargaSi = 0;
     let avantcargaNo = 0;
@@ -72,8 +75,10 @@ $(document).ready(function() {
     });
 
     // Inicializar tabla con los datos del JSON
-    $.getJSON('data/data.json', function(data) {
+    $.getJSON('data/rueda-ligeros.json', function(data) {
         listaPersonas = data;
+
+        guardarEnSession();
         renderizarTabla(listaPersonas);
 
         actualizarEstadoCeldas();
@@ -149,7 +154,7 @@ $(document).ready(function() {
     $(document).on('click', '.editarBtn', function() {
         const index = $(this).closest('tr').data('index');
         const persona = listaPersonas[index];
-        editarPersona(persona, index);
+        mostrarEditarPersona(persona, index);
     });
 
     // Guardar cambios
@@ -215,6 +220,7 @@ $(document).ready(function() {
         };
 
         listaPersonas.push(nuevoFestero);
+        guardarEnSession();
         renderizarTabla(listaPersonas);
         $("#modalNuevoFestero").modal("hide");
     });
@@ -235,6 +241,30 @@ $(document).ready(function() {
         }
     });
 
+    // Permitir escuadras mixtas
+    $("#mixta").on("change", function() {
+        permitirMixta = $(this).is(":checked");
+
+        if (permitirMixta) {
+            // Quitar restricciones y estilos de bloqueo
+            $(".disabled").removeClass("disabled");
+        } else {
+            // Volver a aplicar restricciones de género para todos los actos
+            Object.keys(columnas).forEach(key => {
+                const colNombre = columnas[key];
+
+                if (generoPermitido != "") {
+                    bloquearGeneroContrario(colNombre, generoPermitido);
+                }
+            });
+        }
+    });
+
+    // Exportar XLSX
+    $("#exportXLSX").on("click", function () {
+        exportarPersonasXLSX(listaPersonas);
+    });
+
     /**
      *****************
      *   FUNCIONES   *
@@ -242,6 +272,14 @@ $(document).ready(function() {
      */
 
     function renderizarTabla(listaPersonas = []) {
+        // Si listaPersonas está vacío, intentar cargar de sessionStorage
+        if (listaPersonas.length === 0) {
+            const datosSession = sessionStorage.getItem("listaPersonas");
+            if (datosSession) {
+                listaPersonas = JSON.parse(datosSession);
+            }
+        }
+
         // Limpiar el tbody por si hubiera algo
         $('#tablaDatos tbody').empty();
 
@@ -283,7 +321,7 @@ $(document).ready(function() {
         actualizarColores();
     }
 
-    function editarPersona(persona, index) {
+    function mostrarEditarPersona(persona, index) {
         $("#editarNumRueda").val(persona.num_rueda);
         $("#editarNombre").val(persona.nombre);
         $("#editarGenero").val(persona.genero);
@@ -323,6 +361,8 @@ $(document).ready(function() {
         listaPersonas[index].diana1 = $('#editarDiana1').val();
         listaPersonas[index].diana2 = $('#editarDiana2').val();
         listaPersonas[index].diana3 = $('#editarDiana3').val();
+
+        guardarEnSession();
     }
 
     function actualizarEstadoCeldas() {
@@ -458,6 +498,8 @@ $(document).ready(function() {
 
     // Bloquear perosnas del género minoritario en un acto
     function bloquearGeneroContrario(colNombre, generoPermitido) {
+        if (permitirMixta) return; // Si está activado, no se bloquea nada
+
         const indexCorrecto = Object.keys(columnas).find(key => columnas[key] === colNombre);
 
         $('#tablaDatos tbody tr').each(function () {
@@ -481,6 +523,8 @@ $(document).ready(function() {
                     actualizarResumenAvantcarga(listaPersonas[personaIndex].avantcarga, "resta");
                 }
             }
+
+            guardarEnSession();
 
             // Deshabilitar celda para género contrario
             if (genero !== generoPermitido) {
@@ -532,6 +576,8 @@ $(document).ready(function() {
         listaPersonas.forEach((item, index) => {
             item.num_rueda = index + 1; 
         });
+
+        guardarEnSession();
     }
     
     // Actualizar contadores de carné de avantcara
@@ -571,12 +617,13 @@ $(document).ready(function() {
                 listaPersonas[personaIndex][colNombre] = valorCelda === '' ? null : añoFestero;
             }
         });
+
+        guardarEnSession();
     }
 
 
     // Mover al final de la rueda aquellos festeros que realizan acto
     function moverSeleccionadosAlFinal(colNombre) {
-        console.log('mover');
         // 1. Separa personas: las que tienen la columna actual = añoFestero vs las demás
         const personasAMover = [];
         const personasQueQuedan = [];
@@ -588,31 +635,53 @@ $(document).ready(function() {
                 personasQueQuedan.push(persona);
             }
         });
-        console.log('a mover', personasAMover);
-        console.log('se quedan', personasQueQuedan)
-        
+
         // 2. Reorganiza: primero las que quedan, luego las que se mueven
         listaPersonas = [...personasQueQuedan, ...personasAMover];
         
-        // 3. Re-renderiza la tabla
+        // 3. Guardar datos en sesión
+        guardarEnSession()
+
+        // 4. Re-renderiza la tabla
         reasignarNumerosRueda();
         renderizarTabla(listaPersonas);
     }
 
+    // Guardar en sessionStorage cada vez que listaPersonas cambie
+    function guardarEnSession() {
+        sessionStorage.setItem("listaPersonas", JSON.stringify(listaPersonas));
+    }
+
+    // Exportar en formato JSON
     function guardarRuedaFesteros() {
-        const jsonStr = JSON.stringify(listaPersonas, null, 2); // formato bonito con indentación
+        const jsonStr = JSON.stringify(listaPersonas, null, 2);
         const blob = new Blob([jsonStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = "data.json"; // nombre del archivo
+        a.download = "rueda-ligeros.json"; // nombre del archivo
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
-        console.log("Lista de personas guardada en data.json");
     }
     
+    //Exportar en formato XLSX
+    function exportarPersonasXLSX(lista) {
+        if (!lista || lista.length === 0) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+
+        // Crear hoja de cálculo desde JSON
+        const worksheet = XLSX.utils.json_to_sheet(lista);
+
+        // Crear libro y añadir hoja
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Personas");
+
+        // Descargar archivo Excel
+        XLSX.writeFile(workbook, "rueda-ligeros.xlsx");
+    }
 });
