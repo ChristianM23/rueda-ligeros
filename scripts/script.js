@@ -233,12 +233,19 @@ $(document).ready(function() {
     // Fijar contadores
     $(window).on('scroll', function() {
         if ($(window).scrollTop() > 0) {
+            $("#btnSubir").fadeIn();
             $("#topBar").addClass("contador-fijo");
         } else {
+            $("#btnSubir").fadeOut();
             if ($("#topBar").hasClass("contador-fijo")) {
                 $("#topBar").removeClass("contador-fijo");
             }
         }
+    });
+
+    $("#btnSubir").click(function () {
+        $("html, body").animate({ scrollTop: 0 }, 600);
+        return false;
     });
 
     // Permitir escuadras mixtas
