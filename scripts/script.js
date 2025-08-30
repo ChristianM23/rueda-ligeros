@@ -17,7 +17,7 @@ $(document).ready(function() {
 
     // Límite escuadreros/dianeros
     const limitePorColumna = {
-        escuadra1: 5,
+        escuadra1: 11,
         escuadra2: 11,
         diana1: 11,
         diana2: 11,
